@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', { packages: ['corechart'] });
+      google.charts.setOnLoadCallback(drawDashboard);
+
+      function drawDashboard() {
+        // Livestock Chart
+        fetch('Processed Data(Livestock).csv')
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split('\n').slice(1);
+            const livestockData = [['Category', '2020/21', '2021/22', '2022/23']];
+            rows.forEach((row) => {
+              const columns = row.split(',');
+              if (columns.length > 3) {
+                livestockData.push([columns[0], +columns[1], +columns[2], +columns[3]]);
+              }
+            });
+
+            const livestockChart = google.visualization.arrayToDataTable(livestockData);
+            const livestockOptions = {
+              title: 'Livestock Population Trends',
+              hAxis: { title: 'Category' },
+              vAxis: { title: 'Population' },
+            };
+            const chart = new google.visualization.ColumnChart(document.getElementById('livestock_chart'));
+            chart.draw(livestockChart, livestockOptions);
+          });
+
+        // Pulses Chart
+        fetch('Processed Data(Pulses).csv')
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split('\n').slice(2);
+            const pulsesData = [['Crops', '2020/21 Area', '2020/21 Production', '2021/22 Area', '2021/22 Production', '2022/23 Area', '2022/23 Production']];
+            rows.forEach((row) => {
+              const columns = row.split(',');
+              if (columns.length > 6) {
+                pulsesData.push([columns[0], +columns[2], +columns[3], +columns[4], +columns[5], +columns[6], +columns[7]]);
+              }
+            });
+
+            const pulsesChart = google.visualization.arrayToDataTable(pulsesData);
+            const pulsesOptions = {
+              title: 'Pulses Production Trends',
+              curveType: 'function',
+              legend: { position: 'bottom' },
+            };
+            const chart = new google.visualization.LineChart(document.getElementById('pulses_chart'));
+            chart.draw(pulsesChart, pulsesOptions);
+          });
+
+        // Land Use Chart
+        fetch('Processed Data(Land Use Distribution By Use).csv')
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split('\n').slice(1);
+            const landUseData = [['Type', 'Bagmati', 'Gandaki', 'Karnali', 'Koshi', 'Lumbini', 'Madhesh', 'Sudurpashchim']];
+            rows.forEach((row) => {
+              const columns = row.split(',');
+              if (columns.length > 7) {
+                landUseData.push([columns[0], +columns[1], +columns[2], +columns[3], +columns[4], +columns[5], +columns[6], +columns[7]]);
+              }
+            });
+
+            const landUseChart = google.visualization.arrayToDataTable(landUseData);
+            const landUseOptions = {
+              title: 'Land Use Distribution by Province',
+              hAxis: { title: 'Type' },
+              vAxis: { title: 'Area (sq km)' },
+            };
+            const chart = new google.visualization.BarChart(document.getElementById('land_use_chart'));
+            chart.draw(landUseChart, landUseOptions);
+          });
+
+        // Cereal Pie Charts
+        fetch('Processed Data(Cereal).csv')
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split('\n').slice(2);
+            const fiscalYears = ['2077/78', '2078/79', '2079/80'];
+            const columns = {
+              '2077/78 (Area)': 1,
+              '2077/78 (Production)': 2,
+              '2078/79 (Area)': 3,
+              '2078/79 (Production)': 4,
+              '2079/80 (Area)': 5,
+              '2079/80 (Production)': 6,
+            };
+
+            const chartDataByType = (columnIndex, type) => {
+              const chartData = [['Cereal', type]];
+              rows.forEach((row) => {
+                const cols = row.split(',');
+                if (cols.length > columnIndex && !isNaN(+cols[columnIndex])) {
+                  chartData.push([cols[0], +cols[columnIndex]]);
+                }
+              });
+              return chartData;
+            };
+
+            fiscalYears.forEach((year) => {
+              ['Area', 'Production'].forEach((type) => {
+                const chartData = google.visualization.arrayToDataTable(chartDataByType(columns[`${year} (${type})`], type));
+                const options = {
+                  title: `Cereal Crops ${year} (${type})`,
+                };
+
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart';
+                document.getElementById('cereal_charts').appendChild(chartDiv);
+
+                const chart = new google.visualization.PieChart(chartDiv);
+                chart.draw(chartData, options);
+              });
+            });
+          });
+      }
+    </script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      h1 {
+        text-align: center;
+        margin: 20px 0;
+      }
+
+      #dashboard {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        height: calc(100vh - 80px); /* Adjust based on title height */
+      }
+
+      #left-charts, #right-charts {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      #cereal_charts {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .chart {
+        width: 400px;
+        height: 200px;
+        margin: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Agricultural Data Dashboard</h1>
+    <div id="dashboard">
+      <div id="left-charts">
+        <div id="livestock_chart" class="chart"></div>
+        <div id="pulses_chart" class="chart"></div>
+        <div id="land_use_chart" class="chart"></div>
+      </div>
+      <div id="right-charts">
+        <div id="cereal_charts"></div>
+      </div>
+    </div>
+  </body>
+</html>
