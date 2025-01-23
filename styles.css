@@ -65,9 +65,11 @@ button {
   #area_chart_div, #production_chart_div {
     width: 400px; 
     height: 300px; 
+    display: flex;
+    justify-content: center;
   }
   #next_year_button {
-    display: block;
+    display: inline-block;
     margin: 20px auto; 
     padding: 10px 20px;
     font-size: 16px;
