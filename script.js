@@ -4,6 +4,16 @@ google.charts.setOnLoadCallback(loadData);
 let currentIndex = 0;
 let currentYearIndex = 0;
 function drawDashboard() {
+  const data = [["Gender", "Count", { role: 'style' }], ["Male", 10, "red"], ["Female", 20, "green"]]
+  const chart1 = google.visualization.arrayToDataTable(data);
+  const chart1Options = {
+    title: 'Count of Gender',
+    hAxis: { title: 'Gender' },
+    vAxis: { title: 'Count' },
+  };
+  const chart = new google.visualization.ColumnChart(document.getElementById('chart1'));
+  chart.draw(chart1, chart1Options);
+
   // Livestock Chart
   fetch('Processed Data(Livestock).csv')
     .then((response) => response.text())
@@ -52,8 +62,8 @@ function drawDashboard() {
         title: 'Pulses Area and Production (2020/21)',
         isStacked: true,
         legend: { position: 'bottom' },
-        hAxis: { title: 'Crops' },
-        vAxis: { title: 'Area / Production' },
+        vAxis: { title: 'Crops' },
+        hAxis: { title: 'Area / Production' },
       };
       const chartDiv2020 = new google.visualization.BarChart(document.getElementById('chart_2020'));
       chartDiv2020.draw(chart2020, options2020);
@@ -64,8 +74,8 @@ function drawDashboard() {
         title: 'Pulses Area and Production (2021/22)',
         isStacked: true,
         legend: { position: 'bottom' },
-        hAxis: { title: 'Crops' },
-        vAxis: { title: 'Area / Production' },
+        vAxis: { title: 'Crops' },
+        hAxis: { title: 'Area / Production' },
       };
       const chartDiv2021 = new google.visualization.BarChart(document.getElementById('chart_2021'));
       chartDiv2021.draw(chart2021, options2021);
@@ -76,8 +86,8 @@ function drawDashboard() {
         title: 'Pulses Area and Production (2022/23)',
         isStacked: true,
         legend: { position: 'bottom' },
-        hAxis: { title: 'Crops' },
-        vAxis: { title: 'Area / Production' },
+        vAxis: { title: 'Crops' },
+        hAxis: { title: 'Area / Production' },
       };
       const chartDiv2022 = new google.visualization.BarChart(document.getElementById('chart_2022'));
       chartDiv2022.draw(chart2022, options2022);
@@ -91,7 +101,7 @@ function drawDashboard() {
     .then((response) => response.text())
     .then((data) => {
       const rows = data.split('\n').slice(1);
-      const landUseData = [['Type', 'Bagmati', 'Gandaki', 'Karnali', 'Koshi', 'Lumbini', 'Madhesh', 'Sudurpashchim']];
+      const landUseData = [['', 'Bagmati', 'Gandaki', 'Karnali', 'Koshi', 'Lumbini', 'Madhesh', 'Sudurpashchim']];
       rows.forEach((row) => {
         const columns = row.split(',');
         if (columns.length > 7) {
@@ -105,7 +115,7 @@ function drawDashboard() {
         hAxis: { title: 'Type' },
         vAxis: { title: 'Area (sq km)' },
       };
-      const chart = new google.visualization.BarChart(document.getElementById('land_use_chart'));
+      const chart = new google.visualization.ColumnChart(document.getElementById('land_use_chart'));
       chart.draw(landUseChart, landUseOptions);
     });
   /*for stacked column chart*/
