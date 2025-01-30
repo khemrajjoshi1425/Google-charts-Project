@@ -5,13 +5,12 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
-    <script src="script.js" defer></script>
   </head>
   <body>
     <h1>Agricultural Data Dashboard</h1>
     <div id="dashboard">
         <div id="top3-charts">
-            <div id="chart1" class="chart"></div>
+
             <div id="livestock_chart" class="chart"></div>
             <div class="pulse_chart_container">
               <div id="chart_2020" class="chart chart_pulse"></div>
@@ -19,7 +18,7 @@
               <div id="chart_2022" class="chart chart_pulse"></div>
             </div>
             <div id="land_use_chart" class="chart"></div>
-        </div>
+          </div>
         <div id="pie-charts">
           <div id="production_slider_div"></div>
           <div id="area_chart_div"></div>
@@ -34,6 +33,12 @@
         <div class="button-container">
           <button onclick="nextProvince()">Next Province</button>
         </div>
+        <div>
+          <h3 style="margin-left: 30px;">Seed Balance for Selected Agriculture Commodities</h3>
+          <div class="seed_balance_sheet_chart_container">
+          </div>
+        </div>
     </div>
+    <script src="script.js" defer></script>
 </body>
 </html>

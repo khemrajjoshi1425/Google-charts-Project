@@ -93,7 +93,16 @@ button {
       overflow: auto;
   }
   .chart_pulse{
-      flex: 1 1 calc(33.33% - 20px);
+      flex: 1 1 calc(30% - 20px);
       height: 400px;
       min-width: 300px;
+  }
+
+  .seed_balance_sheet_chart_container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 20px;
+    overflow: hidden;
   }
