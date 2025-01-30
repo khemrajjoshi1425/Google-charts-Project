@@ -5,6 +5,27 @@ google.charts.setOnLoadCallback(drawScatterPlot);
 let currentIndex = 0;
 let currentYearIndex = 0;
 function drawDashboard() {
+  fetch("Tomato Big(Nepali).csv").then((response) => response.text()).then((data) => {
+    const row = data.split("\n").slice(1);
+    const tomatoData = [["Date", "Avg"]];
+    row.forEach((row) => {
+      const columns = row.split(",");
+      if (columns.length > 1) {
+        tomatoData.push([
+          columns[0],
+          +columns[1],
+        ]);
+      }
+    });
+    const tomatoChart = google.visualization.arrayToDataTable(tomatoData);
+    const tomatoOptions = {
+      title: "Tomato Big (Nepali) Price Trends",
+      hAxis: { title: "Date" },
+      vAxis: { title: "Average Price (Rs.)" },
+    };
+    const chart = new google.visualization.LineChart(document.getElementById("tomato"));
+    chart.draw(tomatoChart, tomatoOptions);
+  })
   fetch("Seed Balance Sheet.csv")
     .then((response) => response.text())
     .then((data) => {
