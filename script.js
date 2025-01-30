@@ -1,6 +1,7 @@
 google.charts.load("current", { packages: ["corechart", "controls"] });
 google.charts.setOnLoadCallback(drawDashboard);
 google.charts.setOnLoadCallback(loadData);
+google.charts.setOnLoadCallback(drawScatterPlot);
 let currentIndex = 0;
 let currentYearIndex = 0;
 function drawDashboard() {
@@ -458,4 +459,112 @@ function nextProvince() {
       currentIndex = (currentIndex + 1) % (chartData.length - 1);
       drawChart(chartData);
     });
+}
+/* For Scatter and Bar Charts */
+
+  function drawScatterPlot() {
+    fetch('sheep_wool_production.csv')
+        .then(response => response.text())
+        .then(data => {
+            const rows = data.split('\n').slice(1);
+            const provinceDistrictData = {};
+
+            rows.forEach(row => {
+                const columns = row.split(',');
+                if (columns.length >= 4) {
+                    const province = columns[0].trim();
+                    const district = columns[1].trim();
+                    const sheepsNo = parseInt(columns[2].trim()) || 0;
+                    const woolProduced = parseInt(columns[3].trim()) || 0;
+
+                    if (!provinceDistrictData[province]) {
+                        provinceDistrictData[province] = {};
+                    }
+                    provinceDistrictData[province][district] = { sheepsNo, woolProduced };
+                }
+            });
+
+            const provinceSelect = document.getElementById('province');
+            Object.keys(provinceDistrictData).forEach(province => {
+                const option = document.createElement('option');
+                option.value = province;
+                option.text = province;
+                provinceSelect.appendChild(option);
+            });
+
+            const districtSelect = document.getElementById('district');
+
+            provinceSelect.addEventListener('change', function() {
+                updateDistrictDropdown();
+                drawChart(); // Update the chart when province changes
+            });
+
+            districtSelect.addEventListener('change', drawChart);
+
+            // Set a default province (e.g., "BAGMATI")
+            const defaultProvince = "BAGMATI";
+            provinceSelect.value = defaultProvince;
+            updateDistrictDropdown(); // Populate districts for the default province
+            drawChart(); // Draw initial chart
+
+            function updateDistrictDropdown() {
+                const selectedProvince = provinceSelect.value;
+                districtSelect.innerHTML = '<option value="">Select District</option>';
+
+                if (provinceDistrictData[selectedProvince]) {
+                    Object.keys(provinceDistrictData[selectedProvince]).forEach(district => {
+                        const option = document.createElement('option');
+                        option.value = district;
+                        option.text = district;
+                        districtSelect.appendChild(option);
+                    });
+                }
+            }
+
+            function drawChart() {
+                const selectedProvince = provinceSelect.value;
+                const selectedDistrict = document.getElementById('district').value;
+                const chartDiv = document.getElementById('scatter_plot');
+
+                if (selectedDistrict) {
+                    // Bar chart for district
+                    const { sheepsNo, woolProduced } = provinceDistrictData[selectedProvince][selectedDistrict];
+                    const chartData = google.visualization.arrayToDataTable([
+                        ['Metric', 'Value'],
+                        ['Sheeps No.', sheepsNo],
+                        ['Wool Produced', woolProduced]
+                    ]);
+
+                    const options = {
+                        title: `${selectedDistrict} - Sheep and Wool Data`,
+                        vAxis: { title: 'Value' },
+                        hAxis: { title: 'Metric' },
+                        bars: 'group'
+                    };
+
+                    const chart = new google.visualization.BarChart(chartDiv);
+                    chart.draw(chartData, options);
+
+                } else {
+                    // Scatter plot for province
+                    const chartData = [['Sheeps No.', 'Sheep Wool Produced']];
+                    Object.keys(provinceDistrictData[selectedProvince]).forEach(district => {
+                        const { sheepsNo, woolProduced } = provinceDistrictData[selectedProvince][district];
+                        chartData.push([sheepsNo, woolProduced]);
+                    });
+
+                    const data = google.visualization.arrayToDataTable(chartData);
+
+                    const options = {
+                        title: `${selectedProvince} - Sheep Numbers vs. Wool Production`,
+                        hAxis: { title: 'Sheeps No.' },
+                        vAxis: { title: 'Sheep Wool Produced' },
+                    };
+
+                    const chart = new google.visualization.ScatterChart(chartDiv);
+                    chart.draw(data, options);
+                }
+            }
+        })
+        .catch(error => console.error('Error fetching CSV:', error));
 }
