@@ -2,8 +2,13 @@ google.charts.load("current", { packages: ["corechart", "controls"] });
 google.charts.setOnLoadCallback(drawDashboard);
 google.charts.setOnLoadCallback(loadData);
 google.charts.setOnLoadCallback(drawScatterPlot);
+google.charts.setOnLoadCallback(loadCSV);
+google.charts.setOnLoadCallback(drawBubbleRaceChart);
+let chart; 
+let areaChart; 
+let dataTable; 
+let currentYearIndex = 0; 
 let currentIndex = 0;
-let currentYearIndex = 0;
 function drawDashboard() {
   fetch("Tomato Big(Nepali).csv").then((response) => response.text()).then((data) => {
     const row = data.split("\n").slice(1);
@@ -124,112 +129,107 @@ function drawDashboard() {
     });
 
   // Pulses Chart
-  fetch("Processed Data(Pulses).csv")
-    .then((response) => response.text())
-    .then((data) => {
-      const rows = data.split("\n").slice(2);
+fetch("Processed Data(Pulses).csv")
+.then((response) => response.text())
+.then((data) => {
+  const rows = data.split("\n").slice(2);
 
-      const year2020Data = [["Crops", "Area", "Production"]];
-      const year2021Data = [["Crops", "Area", "Production"]];
-      const year2022Data = [["Crops", "Area", "Production"]];
+  const year2020Data = [["Crops", "Area", "Production"]];
+  const year2021Data = [["Crops", "Area", "Production"]];
+  const year2022Data = [["Crops", "Area", "Production"]];
 
-      rows.forEach((row) => {
-        const columns = row.split(",");
-        if (columns.length > 6) {
-          year2020Data.push([columns[0], +columns[1], +columns[2]]);
-          year2021Data.push([columns[0], +columns[3], +columns[4]]);
-          year2022Data.push([columns[0], +columns[5], +columns[6]]);
-        }
-      });
+  rows.forEach((row) => {
+    const columns = row.split(",");
+    if (columns.length > 6) {
+      year2020Data.push([columns[0], +columns[1], +columns[2]]);
+      year2021Data.push([columns[0], +columns[3], +columns[4]]);
+      year2022Data.push([columns[0], +columns[5], +columns[6]]);
+    }
+  });
 
-      // Chart for 2020/21
-      const chart2020 = google.visualization.arrayToDataTable(year2020Data);
-      const options2020 = {
-        title: "Pulses Area and Production (2020/21)",
-        isStacked: true,
-        legend: { position: "bottom" },
-        vAxis: { title: "Crops" },
-        hAxis: { title: "Area / Production" },
-      };
-      const chartDiv2020 = new google.visualization.BarChart(
-        document.getElementById("chart_2020")
-      );
-      chartDiv2020.draw(chart2020, options2020);
+  const drawChart = (data, title, divId) => {
+    const chart = google.visualization.arrayToDataTable(data);
+    const options = {
+      title: title,
+      isStacked: false, // Grouped bar chart
+      hAxis: { title: "Crops" },
+      vAxis: { title: "Area / Production (in tons)" },
+      legend: { position: "top", alignment: "center" },
+      bars: "group", // Grouped bar chart
+    };
+    const chartDiv = new google.visualization.ColumnChart(
+      document.getElementById(divId)
+    );
+    chartDiv.draw(chart, options);
+  };
 
-      // Chart for 2021/22
-      const chart2021 = google.visualization.arrayToDataTable(year2021Data);
-      const options2021 = {
-        title: "Pulses Area and Production (2021/22)",
-        isStacked: true,
-        legend: { position: "bottom" },
-        vAxis: { title: "Crops" },
-        hAxis: { title: "Area / Production" },
-      };
-      const chartDiv2021 = new google.visualization.BarChart(
-        document.getElementById("chart_2021")
-      );
-      chartDiv2021.draw(chart2021, options2021);
+  // Initial chart drawing for the default year (2020)
+  drawChart(year2020Data, "Pulses Area and Production (2020/21)", "chart");
 
-      // Chart for 2022/23
-      const chart2022 = google.visualization.arrayToDataTable(year2022Data);
-      const options2022 = {
-        title: "Pulses Area and Production (2022/23)",
-        isStacked: true,
-        legend: { position: "bottom" },
-        vAxis: { title: "Crops" },
-        hAxis: { title: "Area / Production" },
-      };
-      const chartDiv2022 = new google.visualization.BarChart(
-        document.getElementById("chart_2022")
-      );
-      chartDiv2022.draw(chart2022, options2022);
-    });
+  // Year switch logic
+  document.getElementById("year_switch").addEventListener("change", (event) => {
+    const year = event.target.value;
+    switch (year) {
+      case "2020":
+        drawChart(year2020Data, "Pulses Area and Production (2020/21)", "chart");
+        break;
+      case "2021":
+        drawChart(year2021Data, "Pulses Area and Production (2021/22)", "chart");
+        break;
+      case "2022":
+        drawChart(year2022Data, "Pulses Area and Production (2022/23)", "chart");
+        break;
+    }
+  });
+});
+
 
   // Land Use Chart
   fetch("Processed Data(Land Use Distribution By Use).csv")
     .then((response) => response.text())
     .then((data) => {
-      const rows = data.split("\n").slice(1);
-      const landUseData = [
-        [
-          "",
-          "Bagmati",
-          "Gandaki",
-          "Karnali",
-          "Koshi",
-          "Lumbini",
-          "Madhesh",
-          "Sudurpashchim",
-        ],
-      ];
-      rows.forEach((row) => {
-        const columns = row.split(",");
-        if (columns.length > 7) {
-          landUseData.push([
-            columns[0],
-            +columns[1],
-            +columns[2],
-            +columns[3],
-            +columns[4],
-            +columns[5],
-            +columns[6],
-            +columns[7],
-          ]);
-        }
-      });
+        const rows = data.split("\n").map(row => row.split(","));
+        
+        // Extract land use categories (skip empty headers in CSV)
+        const categories = rows.slice(2).map(row => row[0]); 
+        
+        // Extract provinces (column headers from the second row)
+        const provinces = rows[1].slice(0); 
+        
+        // Prepare data for Google Charts
+        const landUseData = [["Province", ...categories]]; 
 
-      const landUseChart = google.visualization.arrayToDataTable(landUseData);
-      const landUseOptions = {
-        title: "Land Use Distribution by Province",
-        hAxis: { title: "Type" },
-        vAxis: { title: "Area (sq km)" },
-      };
-      const chart = new google.visualization.ColumnChart(
-        document.getElementById("land_use_chart")
-      );
-      chart.draw(landUseChart, landUseOptions);
+        // Loop through each province (columns from CSV)
+        for (let i = 1; i < provinces.length; i++) {
+            let provinceName = provinces[i];
+            let provinceData = [provinceName];
+
+            // Collect data for each land use category
+            for (let j = 2; j < rows.length; j++) {
+                provinceData.push(parseFloat(rows[j][i]) || 0);
+            }
+
+            landUseData.push(provinceData);
+        }
+
+        const chartData = google.visualization.arrayToDataTable(landUseData);
+
+        const options = {
+            title: "Land Use Distribution by Province",
+            hAxis: { title: "Provinces" },
+            vAxis: { title: "Area (sq km)" },
+            bars: "group", // Ensures a grouped bar chart
+            isStacked: false, // Keep bars separate
+        };
+
+        const chart = new google.visualization.ColumnChart(
+            document.getElementById("land_use_chart")
+        );
+        chart.draw(chartData, options);
     });
-  /*for stacked column chart*/
+
+
+  /*for grouped bar chart*/
   fetch("chemical fertilizer sales.csv")
     .then((response) => response.text())
     .then((csvData) => {
@@ -265,8 +265,8 @@ function drawDashboard() {
 
       const options = {
         title: "Fertilizer Distribution by Province",
-        chartArea: { width: "60%" },
-        isStacked: true,
+        chartArea: { width: "50%" },
+        isStacked: false,
         hAxis: {
           title: "Provinces",
         },
@@ -288,104 +288,118 @@ function drawDashboard() {
       );
       chart.draw(data, options);
     });
-
+  // for pie charts
   fetch("Processed Data(Cereal).csv")
-    .then((response) => response.text())
-    .then((data) => {
-      const rows = data
-        .split("\n")
-        .map((row) => row.trim())
-        .slice(1); // Skip header
-      const chartData = [["Cereal", "Area", "Production", "Year"]];
+  .then((response) => response.text())
+  .then((data) => {
+    const rows = data
+      .split("\n")
+      .map((row) => row.trim())
+      .slice(2); // Skip header
+    const chartData = [["Cereal", "Area", "Production", "Yield", "Year"]];
 
-      // Separate arrays for each year
-      const yearData = [2077, 2078, 2079].map(() => []);
+    // Separate arrays for each year
+    const yearData = [2077, 2078, 2079].map(() => []);
 
-      rows.forEach((row) => {
-        const cols = row.split(",").map((col) => col.trim());
-        if (cols.length >= 7) {
-          yearData[0].push([
-            cols[0],
-            parseInt(cols[1], 10) || 0,
-            parseInt(cols[2], 10) || 0,
-            2077,
-          ]);
-          yearData[1].push([
-            cols[0],
-            parseInt(cols[3], 10) || 0,
-            parseInt(cols[4], 10) || 0,
-            2078,
-          ]);
-          yearData[2].push([
-            cols[0],
-            parseInt(cols[5], 10) || 0,
-            parseInt(cols[6], 10) || 0,
-            2079,
-          ]);
-        }
-      });
+    rows.forEach((row) => {
+      const cols = row.split(",").map((col) => col.trim());
+      if (cols.length >= 7) {
+        const area2020 = parseInt(cols[1], 10) || 0;
+        const production2020 = parseInt(cols[2], 10) || 0;
+        const yield2020 = area2020 > 0 ? production2020 / area2020 : 0;
 
-      const dashboard = new google.visualization.Dashboard(
-        document.getElementById("pie-charts")
-      );
-      // Slider for Production
-      const productionSlider = new google.visualization.ControlWrapper({
-        controlType: "NumberRangeFilter",
-        containerId: "production_slider_div",
-        options: {
-          filterColumnIndex: 2, // Production column
-          ui: { label: "Filter by Value" },
-        },
-      });
-      // Pie Chart for Area
-      const areaChart = new google.visualization.ChartWrapper({
-        chartType: "PieChart",
-        containerId: "area_chart_div",
-        options: {
-          title: "Cereal Area(Ha.) by Type",
-          width: 400,
-          height: 300,
-          legend: { position: "right" },
-        },
-        view: { columns: [0, 1] }, // Cereal, Area
-      });
+        const area2021 = parseInt(cols[3], 10) || 0;
+        const production2021 = parseInt(cols[4], 10) || 0;
+        const yield2021 = area2021 > 0 ? production2021 / area2021 : 0;
 
-      // Pie Chart for Production
-      const productionChart = new google.visualization.ChartWrapper({
-        chartType: "PieChart",
-        containerId: "production_chart_div",
-        options: {
-          title: "Cereal Production(Mt.) by Type",
-          width: 400,
-          height: 300,
-          legend: { position: "right" },
-        },
-        view: { columns: [0, 2] }, // Cereal, Production
-      });
+        const area2022 = parseInt(cols[5], 10) || 0;
+        const production2022 = parseInt(cols[6], 10) || 0;
+        const yield2022 = area2022 > 0 ? production2022 / area2022 : 0;
 
-      function updateChartsForYear() {
-        const dataTable = google.visualization.arrayToDataTable([
-          ["Cereal", "Area", "Production", "Year"],
-          ...yearData[currentYearIndex],
-        ]);
-        dashboard.draw(dataTable);
+        yearData[0].push([cols[0], area2020, production2020, yield2020, 2077]);
+        yearData[1].push([cols[0], area2021, production2021, yield2021, 2078]);
+        yearData[2].push([cols[0], area2022, production2022, yield2022, 2079]);
       }
+    });
 
-      // Bind the production slider to the charts
-      dashboard.bind(productionSlider, [areaChart, productionChart]);
-
-      // Initial draw for the first year
-      updateChartsForYear();
-
-      // Next Year Button
-      document.getElementById("next_year_btn").addEventListener("click", () => {
-        currentYearIndex = (currentYearIndex + 1) % yearData.length;
-        updateChartsForYear();
-      });
-    })
-    .catch((error) =>
-      console.error("Error fetching or processing data:", error)
+    const dashboard = new google.visualization.Dashboard(
+      document.getElementById("pie-charts")
     );
+
+    // Slider for Production
+    const productionSlider = new google.visualization.ControlWrapper({
+      controlType: "NumberRangeFilter",
+      containerId: "production_slider_div",
+      options: {
+        filterColumnIndex: 2, // Production column
+        ui: { label: "Filter by Value" },
+      },
+    });
+
+    // Pie Chart for Area
+    const areaChart = new google.visualization.ChartWrapper({
+      chartType: "PieChart",
+      containerId: "area_chart_div",
+      options: {
+        width: 400,
+        height: 300,
+        legend: { position: "right" },
+      },
+      view: { columns: [0, 1] }, // Cereal, Area
+    });
+
+    // Pie Chart for Production
+    const productionChart = new google.visualization.ChartWrapper({
+      chartType: "PieChart",
+      containerId: "production_chart_div",
+      options: {
+        width: 400,
+        height: 300,
+        legend: { position: "right" },
+      },
+      view: { columns: [0, 2] }, // Cereal, Production
+    });
+
+    // Pie Chart for Yield
+    const yieldChart = new google.visualization.ChartWrapper({
+      chartType: "PieChart",
+      containerId: "yield_chart_div",
+      options: {
+        width: 400,
+        height: 300,
+        legend: { position: "right" },
+      },
+      view: { columns: [0, 3] }, // Cereal, Yield
+    });
+
+    function updateChartsForYear() {
+      const dataTable = google.visualization.arrayToDataTable([
+        ["Cereal", "Area", "Production", "Yield", "Year"],
+        ...yearData[currentYearIndex],
+      ]);
+      dashboard.draw(dataTable);
+
+      // Update chart titles based on the year
+      areaChart.setOption("title", `Cereal Area (Ha.) by Type (${yearData[currentYearIndex][0][4]})`);
+      productionChart.setOption("title", `Cereal Production (Mt.) by Type (${yearData[currentYearIndex][0][4]})`);
+      yieldChart.setOption("title", `Cereal Yield (Mt./Ha.) by Type (${yearData[currentYearIndex][0][4]})`);
+    }
+
+    // Bind the production slider to the charts
+    dashboard.bind(productionSlider, [areaChart, productionChart, yieldChart]);
+
+    // Initial draw for the first year
+    updateChartsForYear();
+
+    // Next Year Button
+    document.getElementById("next_year_btn").addEventListener("click", () => {
+      currentYearIndex = (currentYearIndex + 1) % yearData.length;
+      updateChartsForYear();
+    });
+  })
+  .catch((error) =>
+    console.error("Error fetching or processing data:", error)
+  );
 }
 /*for combo chart*/
 function loadData() {
@@ -482,110 +496,286 @@ function nextProvince() {
     });
 }
 /* For Scatter and Bar Charts */
+function drawScatterPlot() {
+  fetch('sheep_wool_production.csv')
+    .then(response => response.text())
+    .then(data => {
+        const rows = data.split('\n').slice(1);
+        const provinceDistrictData = {};
 
-  function drawScatterPlot() {
-    fetch('sheep_wool_production.csv')
-        .then(response => response.text())
-        .then(data => {
-            const rows = data.split('\n').slice(1);
-            const provinceDistrictData = {};
+        rows.forEach(row => {
+            const columns = row.split(',');
+            if (columns.length >= 4) {
+                const province = columns[0].trim();
+                const district = columns[1].trim();
+                const sheepsNo = parseInt(columns[2].trim()) || 0;
+                const woolProduced = parseInt(columns[3].trim()) || 0;
 
-            rows.forEach(row => {
-                const columns = row.split(',');
-                if (columns.length >= 4) {
-                    const province = columns[0].trim();
-                    const district = columns[1].trim();
-                    const sheepsNo = parseInt(columns[2].trim()) || 0;
-                    const woolProduced = parseInt(columns[3].trim()) || 0;
-
-                    if (!provinceDistrictData[province]) {
-                        provinceDistrictData[province] = {};
-                    }
-                    provinceDistrictData[province][district] = { sheepsNo, woolProduced };
+                if (!provinceDistrictData[province]) {
+                    provinceDistrictData[province] = {};
                 }
-            });
-
-            const provinceSelect = document.getElementById('province');
-            Object.keys(provinceDistrictData).forEach(province => {
-                const option = document.createElement('option');
-                option.value = province;
-                option.text = province;
-                provinceSelect.appendChild(option);
-            });
-
-            const districtSelect = document.getElementById('district');
-
-            provinceSelect.addEventListener('change', function() {
-                updateDistrictDropdown();
-                drawChart(); // Update the chart when province changes
-            });
-
-            districtSelect.addEventListener('change', drawChart);
-
-            // Set a default province (e.g., "BAGMATI")
-            const defaultProvince = "BAGMATI";
-            provinceSelect.value = defaultProvince;
-            updateDistrictDropdown(); // Populate districts for the default province
-            drawChart(); // Draw initial chart
-
-            function updateDistrictDropdown() {
-                const selectedProvince = provinceSelect.value;
-                districtSelect.innerHTML = '<option value="">Select District</option>';
-
-                if (provinceDistrictData[selectedProvince]) {
-                    Object.keys(provinceDistrictData[selectedProvince]).forEach(district => {
-                        const option = document.createElement('option');
-                        option.value = district;
-                        option.text = district;
-                        districtSelect.appendChild(option);
-                    });
-                }
+                provinceDistrictData[province][district] = { sheepsNo, woolProduced };
             }
+        });
 
-            function drawChart() {
-                const selectedProvince = provinceSelect.value;
-                const selectedDistrict = document.getElementById('district').value;
-                const chartDiv = document.getElementById('scatter_plot');
+        const provinceSelect = document.getElementById('province');
+        Object.keys(provinceDistrictData).forEach(province => {
+            const option = document.createElement('option');
+            option.value = province;
+            option.text = province;
+            provinceSelect.appendChild(option);
+        });
 
-                if (selectedDistrict) {
-                    // Bar chart for district
-                    const { sheepsNo, woolProduced } = provinceDistrictData[selectedProvince][selectedDistrict];
-                    const chartData = google.visualization.arrayToDataTable([
-                        ['Metric', 'Value'],
-                        ['Sheeps No.', sheepsNo],
-                        ['Wool Produced', woolProduced]
-                    ]);
+        const districtSelect = document.getElementById('district');
 
-                    const options = {
-                        title: `${selectedDistrict} - Sheep and Wool Data`,
-                        vAxis: { title: 'Value' },
-                        hAxis: { title: 'Metric' },
-                        bars: 'group'
-                    };
+        provinceSelect.addEventListener('change', function() {
+            updateDistrictDropdown();
+            drawChart(); // Update the chart when province changes
+        });
 
-                    const chart = new google.visualization.BarChart(chartDiv);
-                    chart.draw(chartData, options);
+        districtSelect.addEventListener('change', drawChart);
 
-                } else {
-                    // Scatter plot for province
-                    const chartData = [['Sheeps No.', 'Sheep Wool Produced']];
-                    Object.keys(provinceDistrictData[selectedProvince]).forEach(district => {
-                        const { sheepsNo, woolProduced } = provinceDistrictData[selectedProvince][district];
-                        chartData.push([sheepsNo, woolProduced]);
-                    });
+        // Set a default province (e.g., "BAGMATI")
+        const defaultProvince = "BAGMATI";
+        provinceSelect.value = defaultProvince;
+        updateDistrictDropdown(); // Populate districts for the default province
+        drawChart(); // Draw initial chart
 
-                    const data = google.visualization.arrayToDataTable(chartData);
+        function updateDistrictDropdown() {
+            const selectedProvince = provinceSelect.value;
+            districtSelect.innerHTML = '<option value="">Select District</option>';
 
-                    const options = {
-                        title: `${selectedProvince} - Sheep Numbers vs. Wool Production`,
-                        hAxis: { title: 'Sheeps No.' },
-                        vAxis: { title: 'Sheep Wool Produced' },
-                    };
-
-                    const chart = new google.visualization.ScatterChart(chartDiv);
-                    chart.draw(data, options);
-                }
+            if (provinceDistrictData[selectedProvince]) {
+                Object.keys(provinceDistrictData[selectedProvince]).forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.text = district;
+                    districtSelect.appendChild(option);
+                });
             }
-        })
-        .catch(error => console.error('Error fetching CSV:', error));
+        }
+
+        function drawChart() {
+            const selectedProvince = provinceSelect.value;
+            const selectedDistrict = document.getElementById('district').value;
+            const chartDiv = document.getElementById('scatter_plot');
+
+            if (selectedDistrict) {
+                // Bubble chart for district
+                const { sheepsNo, woolProduced } = provinceDistrictData[selectedProvince][selectedDistrict];
+                const chartData = google.visualization.arrayToDataTable([
+                    ['Metric', 'Wool Produced', 'Sheeps No.'],
+                    ['Wool Produced', woolProduced, sheepsNo]
+                ]);
+
+                const options = {
+                    title: `${selectedDistrict} - Sheep and Wool Data`,
+                    hAxis: { title: 'Wool Produced(in Kg)' },
+                    vAxis: { title: 'Sheeps No.' },
+                    sizeAxis: { minSize: 5, maxSize: 20 }, // Control bubble size based on sheep number
+                };
+
+                const chart = new google.visualization.BubbleChart(chartDiv);
+                chart.draw(chartData, options);
+
+            } else {
+                // Scatter plot for province
+                const chartData = [['Sheeps No.', 'Sheep Wool Produced']];
+                Object.keys(provinceDistrictData[selectedProvince]).forEach(district => {
+                    const { sheepsNo, woolProduced } = provinceDistrictData[selectedProvince][district];
+                    chartData.push([sheepsNo, woolProduced]);
+                });
+
+                const data = google.visualization.arrayToDataTable(chartData);
+
+                const options = {
+                    title: `${selectedProvince} - Sheep Numbers vs. Wool Production`,
+                    hAxis: { title: 'Sheeps No.' },
+                    vAxis: { title: 'Wool Produced(in Kg)' },
+                };
+
+                const chart = new google.visualization.ScatterChart(chartDiv);
+                chart.draw(data, options);
+            }
+        }
+    })
+    .catch(error => console.error('Error fetching CSV:', error));
+}
+
+//for Gdp Growth
+function loadCSV() {
+  // Load the CSV file using PapaParse
+  Papa.parse("Annual GDP growth rate.csv", {
+    download: true,
+    header: true,
+    dynamicTyping: true,
+    complete: function (results) {
+      processData(results.data);
+    },
+  });
+}
+
+function processData(csvData) {
+  // Extract headers (years) and rows (economic activities)
+  const headers = Object.keys(csvData[0]); // All headers (Industrial Classification + years)
+  const years = headers.slice(1); // Extract years (skip the first column)
+
+  // Prepare data for Google Charts
+  const fullDataTable = [["Year", ...csvData.map((row) => row[headers[0]])]]; // First row: Year + Economic Activities
+
+  // Add data for each year
+  years.forEach((year) => {
+    const rowData = [year];
+    csvData.forEach((activity) => {
+      rowData.push(activity[year]);
+    });
+    fullDataTable.push(rowData);
+  });
+
+  // Convert to Google Charts DataTable
+  dataTable = google.visualization.arrayToDataTable(fullDataTable);
+
+  // Initialize the charts
+  initializeCharts();
+
+  // Start year-by-year animation
+  animateYearByYear();
+}
+
+function initializeCharts() {
+  const options = {
+    title: "Annual GDP Growth Rate by Economic Activities",
+    curveType: "function",
+    legend: { position: "right", textStyle: { fontSize: 12 } }, // Legend on the right with adjusted font size
+    hAxis: { title: "Year" },
+    vAxis: { title: "Growth Rate (%)" },
+    chartArea: { width: "70%", height: "80%" }, // Adjust chart area to make space for the legend
+  };
+
+
+  // Initialize Area Chart
+  areaChart = new google.visualization.AreaChart(
+    document.getElementById("area_chart")
+  );
+}
+
+function animateYearByYear() {
+  if (currentYearIndex >= dataTable.getNumberOfRows()) {
+    currentYearIndex = 0; // Reset to the first year after reaching the end
+  }
+
+  // Create a view of the data up to the current year
+  const view = new google.visualization.DataView(dataTable);
+  view.setRows(0, currentYearIndex + 1); // Show data up to the current year
+
+  // Draw the Area Chart with the current view
+  areaChart.draw(view, {
+    title: `Annual GDP Growth Rate by Economic Activities (Up to ${dataTable.getValue(currentYearIndex, 0)})`,
+    curveType: "function",
+    legend: { position: "right", textStyle: { fontSize: 12 } }, // Legend on the right
+    hAxis: { title: "Year" },
+    vAxis: { title: "Growth Rate (%)" },
+    isStacked: false,
+    chartArea: { width: "70%", height: "80%" }, // Adjust chart area to make space for the legend
+  });
+
+  // Move to the next year
+  currentYearIndex++;
+
+  // Schedule the next frame of the animation
+  setTimeout(animateYearByYear, 2000); // Adjust the delay (in milliseconds) as needed
+}
+
+//for commercial loans bubble race chart
+function drawBubbleRaceChart() {
+  fetch("commercial banks loan.csv") 
+    .then((response) => response.text())
+    .then((csvData) => {
+      const rows = csvData.split("\n").slice(1); // Skip the header row
+      const sectors = [];
+      const years = [];
+      const data = [];
+
+      // Extract years from the header
+      const headers = csvData.split("\n")[0].split(",");
+      years.push(...headers.slice(1).map((year) => parseInt(year))); // Extract years as numbers
+
+      // Process each row (sector)
+      rows.forEach((row) => {
+        const columns = row.split(",");
+        const sector = columns[0].replace(/"/g, ""); // Sector name (remove quotes)
+        sectors.push(sector);
+
+        // Extract loan values for each year
+        const loanValues = columns.slice(1).map((value) => parseFloat(value));
+        data.push(loanValues);
+      });
+
+      // Prepare data for Google Charts
+      const chartData = [["Sector", "Year", "Loan Amount", "Size"]]; // Correct column order
+
+      // Loop through each year and sector to create the data table
+      years.forEach((year, yearIndex) => {
+        sectors.forEach((sector, sectorIndex) => {
+          const loanAmount = data[sectorIndex][yearIndex];
+          const bubbleSize = loanAmount * 0.05; // Adjust the multiplier as needed for bubble size
+          chartData.push([sector, year, loanAmount, bubbleSize]);
+        });
+      });
+
+      // Convert to Google Charts DataTable
+      const dataTable = google.visualization.arrayToDataTable(chartData);
+
+      // Set chart options
+      const options = {
+        title: "Sector-wise Loan and Advances of Commercial Banks ",
+        hAxis: { title: "Year", format: "####" }, // Format years as numbers
+        vAxis: { title: "Loan Amount " },
+        bubble: { textStyle: { fontSize: 11 } },
+        animation: {
+          duration: 1000,
+          easing: "out",
+          startup: true,
+        },
+        colors: [
+          "#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6",
+          "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99"
+        ],
+      };
+
+      // Draw the chart initially with all years, but we'll animate it later
+      const chart = new google.visualization.BubbleChart(document.getElementById("bubble_race_chart"));
+      chart.draw(dataTable, options);
+
+      // Function to animate the chart year by year
+      let currentYearIndex = 0;
+      const intervalTime = 2000; // 2 second between each year update
+
+      function animateChart() {
+        if (currentYearIndex > years.length - 1) {
+          currentYearIndex = 0; // Reset to the first year after reaching the end
+        }
+
+        // Filter the rows for the current year and create a view of the data
+        const view = new google.visualization.DataView(dataTable);
+        const filteredRows = dataTable.getFilteredRows([{ column: 1, minValue: years[0], maxValue: years[currentYearIndex] }]);
+
+        view.setRows(filteredRows);
+
+        // Update the chart title to show the current year range
+        options.title = `Sector-wise Loan and Advances of Commercial Banks (Up to ${years[currentYearIndex]})`;
+
+        // Draw the chart with the updated view
+        chart.draw(view, options);
+
+        // Move to the next year
+        currentYearIndex++;
+
+        // Schedule the next frame of the animation
+      }
+
+      // Start the animation
+      setInterval(animateChart, intervalTime); // Adjust the delay (in milliseconds) as needed
+    })
+    .catch((error) => console.error("Error loading CSV:", error));
 }

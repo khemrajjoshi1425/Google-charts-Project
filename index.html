@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   </head>
   <body>
     <h1>Agricultural Data Dashboard</h1>
@@ -12,17 +13,23 @@
         <div id="top3-charts">
 
             <div id="livestock_chart" class="chart"></div>
-            <div class="pulse_chart_container">
-              <div id="chart_2020" class="chart chart_pulse"></div>
-              <div id="chart_2021" class="chart chart_pulse"></div>
-              <div id="chart_2022" class="chart chart_pulse"></div>
-            </div>
+             <!-- Year Switch Dropdown -->
+            <label for="year_switch">Select Year: </label>
+            <select id="year_switch">
+            <option value="2020">2020/21</option>
+            <option value="2021">2021/22</option>
+            <option value="2022">2022/23</option>
+            </select>
+
+            <!-- Chart container -->
+            <div id="chart" style="width: 900px; height: 500px;"></div>
             <div id="land_use_chart" class="chart"></div>
           </div>
         <div id="pie-charts">
           <div id="production_slider_div"></div>
           <div id="area_chart_div"></div>
           <div id="production_chart_div"></div>
+          <div id="yield_chart_div"></div>
           <div class="btn-container">
             <button id="next_year_btn">Next Year</button> 
           </div>
@@ -46,6 +53,8 @@
       
           <div id="scatter_plot"></div>
       </div>
+      <div id="area_chart" style="width: 1960px; height: 500px"></div>
+      <div id="bubble_race_chart" style="width: 1960px; height: 800px;"></div>
         <div>
           <h3 style="margin-left: 30px;">Seed Balance for Selected Agriculture Commodities</h3>
           <div class="seed_balance_sheet_chart_container">
