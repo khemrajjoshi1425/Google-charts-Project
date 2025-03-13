@@ -128,61 +128,83 @@ function drawDashboard() {
       chart.draw(livestockChart, livestockOptions);
     });
 
-  // Pulses Chart
+// Pulses Chart
 fetch("Processed Data(Pulses).csv")
-.then((response) => response.text())
-.then((data) => {
-  const rows = data.split("\n").slice(2);
+  .then((response) => response.text())
+  .then((data) => {
+    const rows = data.split("\n").slice(2);
 
-  const year2020Data = [["Crops", "Area", "Production"]];
-  const year2021Data = [["Crops", "Area", "Production"]];
-  const year2022Data = [["Crops", "Area", "Production"]];
+    const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"];
+    let cropColors = {};
+    let colorIndex = 0;
 
-  rows.forEach((row) => {
-    const columns = row.split(",");
-    if (columns.length > 6) {
-      year2020Data.push([columns[0], +columns[1], +columns[2]]);
-      year2021Data.push([columns[0], +columns[3], +columns[4]]);
-      year2022Data.push([columns[0], +columns[5], +columns[6]]);
-    }
-  });
+    const processYearData = (areaHeader, productionHeader, areaIndex, productionIndex) => {
+      let areaData = [["Crops", "Area", { role: "style" }]];
+      let productionData = [["Crops", "Production", { role: "style" }]];
+      
+      rows.forEach((row) => {
+        const columns = row.split(",");
+        if (columns.length > 6) {
+          const crop = columns[0];
+          if (!cropColors[crop]) {
+            cropColors[crop] = colors[colorIndex % colors.length];
+            colorIndex++;
+          }
+          const cropColor = cropColors[crop];
+          
+          areaData.push([crop, +columns[areaIndex], cropColor]);
+          productionData.push([crop, +columns[productionIndex], cropColor]);
+        }
+      });
 
-  const drawChart = (data, title, divId) => {
-    const chart = google.visualization.arrayToDataTable(data);
-    const options = {
-      title: title,
-      isStacked: false, // Grouped bar chart
-      hAxis: { title: "Crops" },
-      vAxis: { title: "Area / Production (in tons)" },
-      legend: { position: "top", alignment: "center" },
-      bars: "group", // Grouped bar chart
+      areaData = [areaData[0], ...areaData.slice(1).sort((a, b) => b[1] - a[1])];
+      productionData = [productionData[0], ...productionData.slice(1).sort((a, b) => b[1] - a[1])];
+      
+      return { areaData, productionData };
     };
-    const chartDiv = new google.visualization.ColumnChart(
-      document.getElementById(divId)
-    );
-    chartDiv.draw(chart, options);
-  };
 
-  // Initial chart drawing for the default year (2020)
-  drawChart(year2020Data, "Pulses Area and Production (2020/21)", "chart");
+    const year2020 = processYearData("Pulses Area (2020/21)", "Pulses Production (2020/21)", 1, 2);
+    const year2021 = processYearData("Pulses Area (2021/22)", "Pulses Production (2021/22)", 3, 4);
+    const year2022 = processYearData("Pulses Area (2022/23)", "Pulses Production (2022/23)", 5, 6);
 
-  // Year switch logic
-  document.getElementById("year_switch").addEventListener("change", (event) => {
-    const year = event.target.value;
-    switch (year) {
-      case "2020":
-        drawChart(year2020Data, "Pulses Area and Production (2020/21)", "chart");
-        break;
-      case "2021":
-        drawChart(year2021Data, "Pulses Area and Production (2021/22)", "chart");
-        break;
-      case "2022":
-        drawChart(year2022Data, "Pulses Area and Production (2022/23)", "chart");
-        break;
-    }
+    const drawChart = (data, title, divId, vAxisTitle) => {
+      const chart = google.visualization.arrayToDataTable(data);
+      const options = {
+        title: title,
+        hAxis: { title: "Crops Type" },
+        vAxis: { title: vAxisTitle },
+        legend: { position: "none" },
+        bars: "vertical", 
+      };
+      const chartDiv = new google.visualization.ColumnChart(
+        document.getElementById(divId)
+      );
+      chartDiv.draw(chart, options);
+    };
+
+    // Initial chart drawing for default year (2020)
+    drawChart(year2020.areaData, "Pulses Area (2020/21)", "chart-area", "Area in Hectare");
+    drawChart(year2020.productionData, "Pulses Production (2020/21)", "chart-production", "Production in Metric Tonnes");
+
+    // Year switch logic
+    document.getElementById("year_switch").addEventListener("change", (event) => {
+      const year = event.target.value;
+      switch (year) {
+        case "2020":
+          drawChart(year2020.areaData, "Pulses Area (2020/21)", "chart-area", "Area in Hectare");
+          drawChart(year2020.productionData, "Pulses Production (2020/21)", "chart-production", "Production in Metric Tonnes");
+          break;
+        case "2021":
+          drawChart(year2021.areaData, "Pulses Area (2021/22)", "chart-area", "Area in Hectare");
+          drawChart(year2021.productionData, "Pulses Production (2021/22)", "chart-production", "Production in Metric Tonnes");
+          break;
+        case "2022":
+          drawChart(year2022.areaData, "Pulses Area (2022/23)", "chart-area", "Area in Hectare");
+          drawChart(year2022.productionData, "Pulses Production (2022/23)", "chart-production", "Production in Metric Tonnes");
+          break;
+      }
+    });
   });
-});
-
 
   // Land Use Chart
   fetch("Processed Data(Land Use Distribution By Use).csv")
